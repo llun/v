@@ -17,7 +17,7 @@ let fetchVideo = (url, cb) => {
   xhr.send();
 }
 
-var mediaSource = new MediaSource;
+let mediaSource = new MediaSource;
 handleAllEvents(mediaSource);
 
 video.src = URL.createObjectURL(mediaSource);
@@ -32,6 +32,7 @@ mediaSource.addEventListener('sourceopen', function(e) {
       let buffers = [];
       info.tracks.forEach(track => {
         let mime = `video/mp4; codecs="${track.codec}"`;
+        console.log(mime);
         if (!MediaSource.isTypeSupported(mime)) return;
 
         let sourceBuffer = mediaSource.addSourceBuffer(mime);
@@ -41,8 +42,13 @@ mediaSource.addEventListener('sourceopen', function(e) {
         handleAllEvents(sourceBuffer);
         sourceBuffer.addEventListener('updateend', function() {
           if (this.pending.length === 0) {
-            this.mediaSource.endOfStream();
-            console.log(this.trackId, 'endofstream');
+            let allPendings = [];
+            let reduced = buffers.reduce((all, list) => all.concat(list.pending), allPendings);
+            console.log(reduced, buffers);
+            if (reduced.length === 0) {
+              this.mediaSource.endOfStream();
+              console.log(this.trackId, 'endofstream');
+            }
             return;
           }
           let head = this.pending.shift();
@@ -57,7 +63,9 @@ mediaSource.addEventListener('sourceopen', function(e) {
         segment.user.pending.push(segment.buffer);
       });
       mp4box.start();
+      console.log(buffers);
       buffers.forEach(buffer => {
+        console.log('init buffer', buffer);
         let head = buffer.pending.shift();
         buffer.appendBuffer(head);
       });
